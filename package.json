@@ -10,6 +10,11 @@
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
+    "./testing": {
+      "prism-nexus-source": "./src/testing/index.ts",
+      "types": "./lib/typescript/src/testing/index.d.ts",
+      "default": "./lib/module/testing/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
