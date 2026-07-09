@@ -2,8 +2,6 @@ import ExpoModulesCore
 
 private let hydratePath = "://hydrate/"
 
-/// Extracts the request id from a deep-link locator. Routing context is never
-/// encoded in the URL — only the opaque `reqId` segment is returned.
 private func extractReqId(from url: String) -> String? {
   guard let range = url.range(of: hydratePath) else {
     return nil
@@ -13,6 +11,17 @@ private func extractReqId(from url: String) -> String? {
 }
 
 public class PrismNexusHydratorModule: Module {
+  private var service: HydratorService?
+
+  private func getService() throws -> HydratorService {
+    if let service {
+      return service
+    }
+    let created = try HydratorService()
+    service = created
+    return created
+  }
+
   public func definition() -> ModuleDefinition {
     Name("PrismNexusHydrator")
 
@@ -24,20 +33,42 @@ public class PrismNexusHydratorModule: Module {
       return extractReqId(from: url)
     }
 
-    // Scaffold: native secure store + crypto pipeline lands in Phase 2.
+    AsyncFunction("configure") { (options: [String: Any]) in
+      let testMode = options["testMode"] as? Bool ?? false
+      try self.getService().configure(testMode: testMode)
+    }
+
+    AsyncFunction("storePayload") { (payload: [String: Any]) in
+      try self.getService().storePayloadDictionary(payload)
+    }
+
+    AsyncFunction("sealAndStorePayload") { (input: [String: Any]) -> [String: Any] in
+      guard let reqId = input["reqId"] as? String,
+            let ctx = input["ctx"] as? String,
+            let state = input["state"] else {
+        HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Invalid seal input")
+      }
+      let version = input["version"] as? Int ?? 1
+      let ts = input["ts"] as? Int ?? Int(Date().timeIntervalSince1970)
+      return try self.getService().sealAndStore(
+        state: state,
+        reqId: reqId,
+        ctx: ctx,
+        version: version,
+        ts: ts
+      )
+    }
+
     AsyncFunction("resolveEnvelope") { (_ trigger: String) -> [String: Any]? in
-      return nil
+      return try self.getService().resolveEnvelope()
     }
 
     AsyncFunction("purgeExpired") {
-      return 0
+      return try self.getService().purgeExpired()
     }
 
     AsyncFunction("inspectStorage") {
-      return [
-        "stored": [] as [String],
-        "cached": 0,
-      ]
+      return try self.getService().inspectStorage()
     }
   }
 }
