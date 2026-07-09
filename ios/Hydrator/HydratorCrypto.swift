@@ -89,15 +89,19 @@ final class HydratorCrypto {
     return plaintext
   }
 
-  func seal(state: Data, reqId: String, v: Int, ts: Int, ctx: String) throws -> WirePayload {
+  func seal(state: Data, reqId: String, v: Int, ts: Int, ctx: String, chunkThreshold: Int) throws -> WirePayload {
     try keys.resolveKid(HydratorConstants.kidV1)
     let aesKey = try keys.aesKey()
     let signingKey = try keys.signingKey()
     var chunks: [WireChunk] = []
+    let sliceSize = HydratorChunking.plaintextSliceSize(
+      plaintextBytes: state.count,
+      threshold: chunkThreshold
+    )
     var offset = 0
     var seq = 0
     while offset < state.count {
-      let end = min(offset + HydratorConstants.chunkSize, state.count)
+      let end = min(offset + sliceSize, state.count)
       let slice = state.subdata(in: offset..<end)
       let nonce = AES.GCM.Nonce()
       let sealed = try AES.GCM.seal(slice, using: aesKey, nonce: nonce)

@@ -4,6 +4,8 @@ final class HydratorService {
   private let storage: HydratorStorage
   private let crypto = HydratorCrypto()
   private var testMode = false
+  private var chunkThreshold = HydratorConstants.chunkThreshold
+  private var reassemblyTimeoutMs = HydratorConstants.reassemblyTimeoutMs
   private var inFlight = Set<String>()
   private let lock = NSLock()
 
@@ -11,8 +13,14 @@ final class HydratorService {
     storage = try HydratorStorage()
   }
 
-  func configure(testMode: Bool) {
+  func configure(testMode: Bool, chunkThreshold: Int?, reassemblyTimeoutMs: UInt64?) {
     self.testMode = testMode
+    if let chunkThreshold, chunkThreshold > 0 {
+      self.chunkThreshold = chunkThreshold
+    }
+    if let reassemblyTimeoutMs, reassemblyTimeoutMs > 0 {
+      self.reassemblyTimeoutMs = reassemblyTimeoutMs
+    }
   }
 
   func storePayloadDictionary(_ payload: [String: Any]) throws {
@@ -33,7 +41,8 @@ final class HydratorService {
       reqId: reqId,
       v: version,
       ts: ts,
-      ctx: ctx
+      ctx: ctx,
+      chunkThreshold: chunkThreshold
     )
     try storeWirePayload(wire)
     return wire.toDictionary()
@@ -81,9 +90,11 @@ final class HydratorService {
     guard wire.reqId == reqId else {
       throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "reqId mismatch")
     }
-    try crypto.verifySignature(payload: wire)
-    let plaintext = try crypto.decryptChunks(wire.chunks)
-    let state = try JSONSerialization.jsonObject(with: plaintext)
+    let state = try HydratorReassembly.decryptAndParse(
+      crypto: crypto,
+      wire: wire,
+      timeoutMs: reassemblyTimeoutMs
+    )
     try storage.remove(reqId: reqId)
     return [
       "reqId": wire.reqId,

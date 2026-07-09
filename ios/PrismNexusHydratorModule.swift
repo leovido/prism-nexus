@@ -35,7 +35,20 @@ public class PrismNexusHydratorModule: Module {
 
     AsyncFunction("configure") { (options: [String: Any]) in
       let testMode = options["testMode"] as? Bool ?? false
-      try self.getService().configure(testMode: testMode)
+      let chunkThreshold = options["chunkThreshold"] as? Int
+      let reassemblyTimeoutMs: UInt64?
+      if let ms = options["reassemblyTimeoutMs"] as? Int {
+        reassemblyTimeoutMs = UInt64(ms)
+      } else if let ms = options["reassemblyTimeoutMs"] as? Double {
+        reassemblyTimeoutMs = UInt64(ms)
+      } else {
+        reassemblyTimeoutMs = nil
+      }
+      try self.getService().configure(
+        testMode: testMode,
+        chunkThreshold: chunkThreshold,
+        reassemblyTimeoutMs: reassemblyTimeoutMs
+      )
     }
 
     AsyncFunction("storePayload") { (payload: [String: Any]) in
