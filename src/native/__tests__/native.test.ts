@@ -30,6 +30,17 @@ function makeNativeModule(
   return {
     isAvailable: () => true,
     extractReqId: (url) => extractReqIdFromUrl(url),
+    configure: async () => undefined,
+    storePayload: async () => undefined,
+    sealAndStorePayload: async () => ({
+      reqId: 'req-1',
+      v: 1,
+      ts: 1,
+      ctx: 'session',
+      kid: 'v1',
+      sig: 'sig',
+      chunks: [],
+    }),
     resolveEnvelope: async () => null,
     purgeExpired: async () => 0,
     inspectStorage: async () => ({ stored: [], cached: 0 }),

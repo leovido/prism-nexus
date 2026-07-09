@@ -1,4 +1,9 @@
 import type { HydrationErrorCode } from '../errors';
+import type {
+  HydrationWirePayload,
+  NativeHydratorConfigureOptions,
+} from './wirePayload';
+import type { SealAndStorePayloadInput } from './storePayload';
 
 /** Trigger names shared between JS orchestration and the native bridge. */
 export type NativeHydrationTrigger = 'appLaunch' | 'appStateActive' | 'manual';
@@ -35,6 +40,11 @@ export interface NativeHydrationErrorPayload {
 export interface PrismNexusHydratorNativeSpec {
   isAvailable(): boolean;
   extractReqId(url: string): string | null;
+  configure(options: NativeHydratorConfigureOptions): Promise<void>;
+  storePayload(payload: HydrationWirePayload): Promise<void>;
+  sealAndStorePayload(
+    input: SealAndStorePayloadInput
+  ): Promise<HydrationWirePayload>;
   resolveEnvelope(
     trigger: NativeHydrationTrigger
   ): Promise<NativeHydrationEnvelope | null>;
