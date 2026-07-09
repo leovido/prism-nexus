@@ -6519,7 +6519,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-modules-core@npm:55.0.25":
+"expo-modules-core@npm:55.0.25, expo-modules-core@npm:~55.0.25":
   version: 55.0.25
   resolution: "expo-modules-core@npm:55.0.25"
   dependencies:
@@ -10364,6 +10364,7 @@ __metadata:
     eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-ft-flow: "npm:^3.0.11"
     eslint-plugin-prettier: "npm:^5.5.6"
+    expo-modules-core: "npm:~55.0.25"
     jest: "npm:^29.7.0"
     lefthook: "npm:^2.1.9"
     prettier: "npm:^3.8.3"
@@ -10374,8 +10375,12 @@ __metadata:
     turbo: "npm:^2.9.16"
     typescript: "npm:^6.0.3"
   peerDependencies:
+    expo: "*"
     react: "*"
     react-native: "*"
+  peerDependenciesMeta:
+    expo:
+      optional: true
   languageName: unknown
   linkType: soft
 

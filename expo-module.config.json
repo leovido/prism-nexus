@@ -1,0 +1,9 @@
+{
+  "platforms": ["android", "apple"],
+  "apple": {
+    "modules": ["PrismNexusHydratorModule"]
+  },
+  "android": {
+    "modules": ["com.prismnexus.hydrator.PrismNexusHydratorModule"]
+  }
+}
