@@ -98,15 +98,18 @@ class HydratorCrypto(
     v: Int,
     ts: Int,
     ctx: String,
+    chunkThreshold: Int,
   ): WirePayload {
     keys.resolveKid(HydratorConstants.KID_V1)
     val aesKey = keys.aesKey()
     val pair = keys.signingKeyPair()
     val chunks = mutableListOf<WireChunk>()
+    val sliceSize =
+      HydratorChunking.plaintextSliceSize(state.size, chunkThreshold)
     var offset = 0
     var seq = 0
     while (offset < state.size) {
-      val end = minOf(offset + HydratorConstants.CHUNK_SIZE, state.size)
+      val end = minOf(offset + sliceSize, state.size)
       val slice = state.copyOfRange(offset, end)
       val cipher = Cipher.getInstance("AES/GCM/NoPadding")
       cipher.init(Cipher.ENCRYPT_MODE, aesKey)

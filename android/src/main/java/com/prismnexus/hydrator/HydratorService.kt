@@ -10,11 +10,23 @@ class HydratorService(
 ) {
   private val storage = HydratorStorage(context)
   private var testMode = false
+  private var chunkThreshold = HydratorConstants.CHUNK_THRESHOLD
+  private var reassemblyTimeoutMs = HydratorConstants.REASSEMBLY_TIMEOUT_MS
   private val crypto = HydratorCrypto(context) { testMode }
   private val inFlight = Collections.synchronizedSet(mutableSetOf<String>())
 
-  fun configure(testMode: Boolean) {
+  fun configure(
+    testMode: Boolean,
+    chunkThreshold: Int? = null,
+    reassemblyTimeoutMs: Long? = null,
+  ) {
     this.testMode = testMode
+    if (chunkThreshold != null && chunkThreshold > 0) {
+      this.chunkThreshold = chunkThreshold
+    }
+    if (reassemblyTimeoutMs != null && reassemblyTimeoutMs > 0) {
+      this.reassemblyTimeoutMs = reassemblyTimeoutMs
+    }
   }
 
   fun storePayloadDictionary(payload: Map<String, Any?>) {
@@ -40,7 +52,7 @@ class HydratorService(
         }
         else -> (JSONObject.wrap(state) ?: JSONObject()).toString().toByteArray(Charsets.UTF_8)
       }
-    val wire = crypto.seal(stateBytes, reqId, version, ts, ctx)
+    val wire = crypto.seal(stateBytes, reqId, version, ts, ctx, chunkThreshold)
     storeWirePayload(wire)
     return wire.toDictionary()
   }
@@ -82,9 +94,9 @@ class HydratorService(
     if (wire.reqId != reqId) {
       HydratorErrors.throwError("MALFORMED_PAYLOAD", "reqId mismatch")
     }
-    crypto.verifySignature(wire)
-    val plaintext = crypto.decryptChunks(wire.chunks)
-    val state = JSONObject(String(plaintext, Charsets.UTF_8))
+    val stateJson =
+      HydratorReassembly.decryptAndParse(crypto, wire, reassemblyTimeoutMs) as JSONObject
+    val state = jsonToValue(stateJson)
     storage.remove(reqId)
     return mapOf(
       "reqId" to wire.reqId,
@@ -95,7 +107,7 @@ class HydratorService(
           "ctx" to wire.ctx,
           "kid" to wire.kid,
         ),
-      "state" to jsonToValue(state),
+      "state" to state,
     )
   }
 

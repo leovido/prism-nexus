@@ -41,7 +41,9 @@ class PrismNexusHydratorModule : Module() {
 
     AsyncFunction("configure") { options: Map<String, Any?> ->
       val testMode = options["testMode"] as? Boolean ?: false
-      getService().configure(testMode)
+      val chunkThreshold = (options["chunkThreshold"] as? Number)?.toInt()
+      val reassemblyTimeoutMs = (options["reassemblyTimeoutMs"] as? Number)?.toLong()
+      getService().configure(testMode, chunkThreshold, reassemblyTimeoutMs)
     }
 
     AsyncFunction("storePayload") { payload: Map<String, Any?> ->
