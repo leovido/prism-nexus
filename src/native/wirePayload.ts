@@ -28,6 +28,13 @@ export interface HydrationWirePayload {
 export interface NativeHydratorConfigureOptions {
   /** Skips TTL enforcement and allows seal-and-store helpers. */
   testMode?: boolean;
+  /**
+   * Encrypted single-chunk size above which payloads are split for transport.
+   * Defaults to 20 KiB.
+   */
+  chunkThreshold?: number;
+  /** Async native reassembly timeout in milliseconds. Defaults to 30s. */
+  reassemblyTimeoutMs?: number;
 }
 
 /** Canonical TTL for ephemeral native storage (seconds). */

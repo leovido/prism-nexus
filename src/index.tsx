@@ -56,15 +56,23 @@ export type {
 export {
   configureNativeHydrator,
   createNativeHydrationSource,
+  estimateChunkCount,
+  estimateSingleChunkCiphertextBytes,
   extractHydrationReqId,
   extractReqIdFromUrl,
   getNativeHydratorModule,
   inspectNativeHydrationStorage,
   isNativeHydratorAvailable,
   mapNativeError,
+  NATIVE_CHUNK_PLAINTEXT_SLICE,
+  NATIVE_CHUNK_THRESHOLD_BYTES,
+  NATIVE_GCM_TAG_BYTES,
+  NATIVE_REASSEMBLY_TIMEOUT_MS,
   purgeExpiredHydrationEntries,
   requireNativeHydratorModule,
+  resolvePlaintextSliceSize,
   sealAndStoreHydrationPayload,
+  shouldChunkPlaintext,
   storeHydrationPayload,
 } from './native';
 export type {
