@@ -49,6 +49,7 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
+    "benchmark": "jest src/benchmarks/__tests__/patch.bench.test.ts --verbose",
     "release": "release-it --only-version"
   },
   "keywords": [
