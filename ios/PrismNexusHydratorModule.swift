@@ -46,7 +46,7 @@ public class PrismNexusHydratorModule: Module {
       guard let reqId = input["reqId"] as? String,
             let ctx = input["ctx"] as? String,
             let state = input["state"] else {
-        HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Invalid seal input")
+        throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "Invalid seal input")
       }
       let version = input["version"] as? Int ?? 1
       let ts = input["ts"] as? Int ?? Int(Date().timeIntervalSince1970)

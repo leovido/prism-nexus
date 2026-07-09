@@ -10,7 +10,7 @@ final class HydratorStorage {
 
   init() throws {
     guard let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first else {
-      HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Caches directory unavailable")
+      throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "Caches directory unavailable")
     }
     cacheDirectory = caches.appendingPathComponent(HydratorConstants.cacheDirName, isDirectory: true)
     try fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)

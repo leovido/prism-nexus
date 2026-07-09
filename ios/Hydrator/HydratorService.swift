@@ -22,7 +22,7 @@ final class HydratorService {
 
   func sealAndStore(state: Any, reqId: String, ctx: String, version: Int, ts: Int) throws -> [String: Any] {
     guard testMode else {
-      HydratorException.throwError(
+      throw HydratorException.error(
         code: "MALFORMED_PAYLOAD",
         message: "sealAndStorePayload requires testMode"
       )
@@ -72,20 +72,18 @@ final class HydratorService {
     }
     if storage.isExpired(meta: meta, testMode: testMode) {
       try storage.remove(reqId: reqId)
-      HydratorException.throwError(code: "TTL_EXPIRED", message: "Hydration payload expired")
+      throw HydratorException.error(code: "TTL_EXPIRED", message: "Hydration payload expired")
     }
     guard let json = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any] else {
-      HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Stored payload is not valid JSON")
+      throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "Stored payload is not valid JSON")
     }
     let wire = try parseWirePayload(json)
     guard wire.reqId == reqId else {
-      HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "reqId mismatch")
+      throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "reqId mismatch")
     }
     try crypto.verifySignature(payload: wire)
     let plaintext = try crypto.decryptChunks(wire.chunks)
-    guard let state = try JSONSerialization.jsonObject(with: plaintext) else {
-      HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Decrypted state is not valid JSON")
-    }
+    let state = try JSONSerialization.jsonObject(with: plaintext)
     try storage.remove(reqId: reqId)
     return [
       "reqId": wire.reqId,
@@ -104,7 +102,7 @@ final class HydratorService {
     let payloadData = try JSONSerialization.data(withJSONObject: projected, options: [])
     let projectedSize = try storage.totalBytes() + payloadData.count
     if projectedSize > HydratorConstants.maxStorageBytes {
-      HydratorException.throwError(code: "STORAGE_QUOTA_EXCEEDED", message: "Native hydrator storage quota exceeded")
+      throw HydratorException.error(code: "STORAGE_QUOTA_EXCEEDED", message: "Native hydrator storage quota exceeded")
     }
     try storage.store(reqId: wire.reqId, payload: payloadData)
   }
@@ -117,7 +115,7 @@ final class HydratorService {
           let kid = dict["kid"] as? String,
           let sig = dict["sig"] as? String,
           let rawChunks = dict["chunks"] as? [[String: Any]] else {
-      HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Invalid wire payload shape")
+      throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "Invalid wire payload shape")
     }
     let chunks = try rawChunks.map { chunk -> WireChunk in
       guard let seq = chunk["seq"] as? Int,
@@ -125,7 +123,7 @@ final class HydratorService {
             let iv = chunk["iv"] as? String,
             let hmac = chunk["hmac"] as? String,
             let data = chunk["data"] as? String else {
-        HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Invalid wire chunk shape")
+        throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "Invalid wire chunk shape")
       }
       return WireChunk(seq: seq, size: size, iv: iv, hmac: hmac, data: data)
     }

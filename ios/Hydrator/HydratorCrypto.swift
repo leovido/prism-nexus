@@ -38,11 +38,11 @@ final class HydratorCrypto {
     let signingKey = try keys.signingKey()
     let message = buildSignatureMessage(payload: payload)
     guard let sigData = HydratorEncoding.base64ToData(payload.sig) else {
-      HydratorException.throwError(code: "SIGNATURE_INVALID", message: "Invalid signature encoding")
+      throw HydratorException.error(code: "SIGNATURE_INVALID", message: "Invalid signature encoding")
     }
     let publicKey = signingKey.publicKey
     guard publicKey.isValidSignature(sigData, for: Data(message.utf8)) else {
-      HydratorException.throwError(code: "SIGNATURE_INVALID", message: "Payload signature verification failed")
+      throw HydratorException.error(code: "SIGNATURE_INVALID", message: "Payload signature verification failed")
     }
   }
 
@@ -50,22 +50,22 @@ final class HydratorCrypto {
     let aesKey = try keys.aesKey()
     let sorted = chunks.sorted { $0.seq < $1.seq }
     guard !sorted.isEmpty else {
-      HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Payload has no chunks")
+      throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "Payload has no chunks")
     }
     for (index, chunk) in sorted.enumerated() {
       if chunk.seq != index {
-        HydratorException.throwError(code: "CHUNK_SEQUENCE_GAP", message: "Missing chunk sequence \(index)")
+        throw HydratorException.error(code: "CHUNK_SEQUENCE_GAP", message: "Missing chunk sequence \(index)")
       }
       guard let ivData = HydratorEncoding.base64ToData(chunk.iv),
             let cipherData = HydratorEncoding.base64UrlToData(chunk.data) else {
-        HydratorException.throwError(code: "MALFORMED_PAYLOAD", message: "Invalid chunk encoding")
+        throw HydratorException.error(code: "MALFORMED_PAYLOAD", message: "Invalid chunk encoding")
       }
       let actualHmac = HydratorEncoding.sha256Hex(cipherData)
       guard actualHmac == chunk.hmac.lowercased() else {
-        HydratorException.throwError(code: "CHUNK_CORRUPTION", message: "Chunk HMAC mismatch at seq \(chunk.seq)")
+        throw HydratorException.error(code: "CHUNK_CORRUPTION", message: "Chunk HMAC mismatch at seq \(chunk.seq)")
       }
       guard cipherData.count == chunk.size else {
-        HydratorException.throwError(code: "CHUNK_CORRUPTION", message: "Chunk size mismatch at seq \(chunk.seq)")
+        throw HydratorException.error(code: "CHUNK_CORRUPTION", message: "Chunk size mismatch at seq \(chunk.seq)")
       }
     }
 
@@ -78,7 +78,7 @@ final class HydratorCrypto {
       let nonce = try AES.GCM.Nonce(data: ivData)
       let tagSize = 16
       guard cipherData.count >= tagSize else {
-        HydratorException.throwError(code: "DECRYPTION_FAILED", message: "Ciphertext too short")
+        throw HydratorException.error(code: "DECRYPTION_FAILED", message: "Ciphertext too short")
       }
       let ciphertext = cipherData.prefix(cipherData.count - tagSize)
       let tag = cipherData.suffix(tagSize)

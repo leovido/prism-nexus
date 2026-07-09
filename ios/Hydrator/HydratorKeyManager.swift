@@ -5,7 +5,7 @@ import Security
 final class HydratorKeyManager {
   func resolveKid(_ kid: String) throws {
     guard kid == HydratorConstants.kidV1 else {
-      HydratorException.throwError(
+      throw HydratorException.error(
         code: "MALFORMED_PAYLOAD",
         message: "Unsupported key id: \(kid)"
       )
@@ -45,7 +45,7 @@ final class HydratorKeyManager {
       return nil
     }
     guard status == errSecSuccess, let data = item as? Data else {
-      HydratorException.throwError(
+      throw HydratorException.error(
         code: "DECRYPTION_FAILED",
         message: "Failed to read device-bound key"
       )
@@ -71,7 +71,7 @@ final class HydratorKeyManager {
       let attributes: [String: Any] = [kSecValueData as String: data]
       let updateStatus = SecItemUpdate(updateQuery as CFDictionary, attributes as CFDictionary)
       guard updateStatus == errSecSuccess else {
-        HydratorException.throwError(
+        throw HydratorException.error(
           code: "DECRYPTION_FAILED",
           message: "Failed to update device-bound key"
         )
@@ -79,7 +79,7 @@ final class HydratorKeyManager {
       return
     }
     guard status == errSecSuccess else {
-      HydratorException.throwError(
+      throw HydratorException.error(
         code: "DECRYPTION_FAILED",
         message: "Failed to store device-bound key"
       )
