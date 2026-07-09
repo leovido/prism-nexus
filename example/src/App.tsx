@@ -12,8 +12,10 @@ import { StatusBar } from 'expo-status-bar';
 import {
   applyPatch,
   configureNativeHydrator,
+  estimateChunkCount,
   HydratorProvider,
   inspectNativeHydrationStorage,
+  NATIVE_CHUNK_THRESHOLD_BYTES,
   sealAndStoreHydrationPayload,
   useHydrator,
   type HydrationResult,
@@ -70,6 +72,41 @@ function HydratorDemo({
     }
   }, [appState.count, onStatusChange]);
 
+  const seedLargePayload = useCallback(async () => {
+    const paddingBytes = NATIVE_CHUNK_THRESHOLD_BYTES + 4096;
+    const padding = 'x'.repeat(paddingBytes);
+    const nextState: AppState = {
+      count: appState.count + 100,
+      label: `chunked (~${estimateChunkCount(paddingBytes)} chunks)`,
+      padding,
+    };
+    const { reqId, url } = mockHydratorExtractor();
+
+    try {
+      if (usesNativeHydrator()) {
+        await sealAndStoreHydrationPayload({
+          reqId,
+          state: nextState,
+          ctx: 'session',
+        });
+      } else {
+        getWebTestStore().put(
+          createMockEnvelope({
+            reqId,
+            state: nextState,
+            context: 'session',
+          })
+        );
+      }
+      onStatusChange(
+        `Seeded large payload ${reqId.slice(0, 8)}… (${estimateChunkCount(paddingBytes)} chunks) via ${url}`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      onStatusChange(`Large seed failed: ${message}`);
+    }
+  }, [appState.count, onStatusChange]);
+
   const inspectStorage = useCallback(async () => {
     if (!usesNativeHydrator()) {
       const snapshot = getWebTestStore().inspect();
@@ -114,6 +151,12 @@ function HydratorDemo({
           title="Seed payload"
           onPress={() => {
             seedPayload();
+          }}
+        />
+        <Button
+          title="Seed large payload (>20KB)"
+          onPress={() => {
+            seedLargePayload();
           }}
         />
         <Button
