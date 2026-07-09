@@ -3,7 +3,10 @@ import {
   TestHydrationStore,
   createMockEnvelope,
   createMockHydrationSource,
+  defaultTestStore,
+  inspectHydrationState,
   mockHydratorExtractor,
+  simulateTTLExpiry,
 } from '../index';
 
 describe('mockHydratorExtractor', () => {
@@ -40,6 +43,20 @@ describe('TestHydrationStore', () => {
 
     expect(store.takeNextLive()).toBeNull();
     expect(store.inspect().cached).toBe(0);
+  });
+});
+
+describe('inspectHydrationState / simulateTTLExpiry', () => {
+  it('reflects the shared default test store', () => {
+    defaultTestStore.reset();
+    defaultTestStore.put(createMockEnvelope({ reqId: 'shared', state: {} }));
+
+    expect(inspectHydrationState().cached).toBe(1);
+
+    simulateTTLExpiry();
+    expect(inspectHydrationState().cached).toBe(0);
+
+    defaultTestStore.reset();
   });
 });
 
