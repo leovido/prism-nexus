@@ -54,6 +54,7 @@ export type {
 } from './provider';
 
 export {
+  configureNativeHydrator,
   createNativeHydrationSource,
   extractHydrationReqId,
   extractReqIdFromUrl,
@@ -63,12 +64,18 @@ export {
   mapNativeError,
   purgeExpiredHydrationEntries,
   requireNativeHydratorModule,
+  sealAndStoreHydrationPayload,
+  storeHydrationPayload,
 } from './native';
 export type {
+  HydrationWireChunk,
+  HydrationWirePayload,
   NativeHydrationClaims,
   NativeHydrationEnvelope,
   NativeHydrationSourceOptions,
   NativeHydrationTrigger,
+  NativeHydratorConfigureOptions,
   NativeStorageSnapshot,
   PrismNexusHydratorNativeSpec,
+  SealAndStorePayloadInput,
 } from './native';
