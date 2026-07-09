@@ -14,13 +14,20 @@ private fun extractReqId(url: String): String? {
   return reqId.ifEmpty { null }
 }
 
-/**
- * Expo Modules bridge for the hydrator native layer.
- *
- * Phase 2 will add secure ephemeral storage, AES-GCM decryption, Ed25519
- * signature verification, TTL enforcement, and async chunk reassembly.
- */
 class PrismNexusHydratorModule : Module() {
+  private var service: HydratorService? = null
+
+  private fun getService(): HydratorService {
+    val existing = service
+    if (existing != null) return existing
+    val context =
+      appContext.reactContext
+        ?: HydratorErrors.throwError("NATIVE_MODULE_UNAVAILABLE", "React context unavailable")
+    val created = HydratorService(context)
+    service = created
+    return created
+  }
+
   override fun definition() = ModuleDefinition {
     Name("PrismNexusHydrator")
 
@@ -32,20 +39,36 @@ class PrismNexusHydratorModule : Module() {
       extractReqId(url)
     }
 
-    // Scaffold: returns null until the secure store pipeline is implemented.
+    AsyncFunction("configure") { options: Map<String, Any?> ->
+      val testMode = options["testMode"] as? Boolean ?: false
+      getService().configure(testMode)
+    }
+
+    AsyncFunction("storePayload") { payload: Map<String, Any?> ->
+      getService().storePayloadDictionary(payload)
+    }
+
+    AsyncFunction("sealAndStorePayload") { input: Map<String, Any?> ->
+      val reqId = input["reqId"] as? String
+        ?: HydratorErrors.throwError("MALFORMED_PAYLOAD", "Invalid seal input")
+      val ctx = input["ctx"] as? String
+        ?: HydratorErrors.throwError("MALFORMED_PAYLOAD", "Invalid seal input")
+      val state = input["state"]
+      val version = (input["version"] as? Number)?.toInt() ?: 1
+      val ts = (input["ts"] as? Number)?.toInt() ?: (System.currentTimeMillis() / 1000).toInt()
+      getService().sealAndStore(state, reqId, ctx, version, ts)
+    }
+
     AsyncFunction("resolveEnvelope") { @Suppress("UNUSED_PARAMETER") _trigger: String ->
-      null
+      getService().resolveEnvelope()
     }
 
     AsyncFunction("purgeExpired") {
-      0
+      getService().purgeExpired()
     }
 
     AsyncFunction("inspectStorage") {
-      mapOf(
-        "stored" to emptyList<String>(),
-        "cached" to 0,
-      )
+      getService().inspectStorage()
     }
   }
 }
