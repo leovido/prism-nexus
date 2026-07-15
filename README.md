@@ -147,13 +147,19 @@ On web or in Jest without native modules, use `createMockHydrationSource(store)`
 
 ## Benchmarks
 
-Profile `computeDiff` and `applyPatch` locally:
+Profile `computeDiff`, `applyPatch`, and the JS hydration pipeline locally:
 
 ```sh
 yarn benchmark
 ```
 
-Sanity budgets are enforced in CI via `src/benchmarks/__tests__/patch.bench.test.ts`.
+Sanity budgets are enforced in CI via `src/benchmarks/__tests__/patch.bench.test.ts` and `hydration.bench.test.ts` (< 50ms mean per op).
+
+## Concurrency & race safety
+
+- **`HydrationQueue`** serializes overlapping hydration attempts and applies only the latest submission. Superseded work is skipped when possible; stale completions emit `onWarn` and never reach `onHydrate`.
+- **`HydratorProvider`** coalesces concurrent lifecycle triggers so a burst of `appLaunch` + foreground events results in a single native resolve pass followed by the newest queued result.
+- **Native TTL purge** skips `reqId`s currently locked for decryption/reassembly, preventing background cleanup from racing active hydration.
 
 ## Example app
 
