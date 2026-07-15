@@ -1,3 +1,5 @@
+import { sha256HexFromUtf8 } from './sha256';
+
 /** Single encrypted chunk in a wire-format hydration payload. */
 export interface HydrationWireChunk {
   seq: number;
@@ -65,10 +67,4 @@ export function buildSignatureMessage(
   chunks: HydrationWireChunk[]
 ): string {
   return `${header.v}|${header.ts}|${header.ctx}|${header.kid}|${computeChunksHmac(chunks)}`;
-}
-
-/** Minimal SHA-256 hex helper for tests (pure JS, mirrors native canonicalization). */
-function sha256HexFromUtf8(input: string): string {
-  const crypto = require('node:crypto') as typeof import('node:crypto');
-  return crypto.createHash('sha256').update(input, 'utf8').digest('hex');
 }
