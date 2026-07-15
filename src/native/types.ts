@@ -1,9 +1,9 @@
 import type { HydrationErrorCode } from '../errors';
+import type { SealAndStorePayloadInput } from './storePayload';
 import type {
   HydrationWirePayload,
   NativeHydratorConfigureOptions,
 } from './wirePayload';
-import type { SealAndStorePayloadInput } from './storePayload';
 
 /** Trigger names shared between JS orchestration and the native bridge. */
 export type NativeHydrationTrigger = 'appLaunch' | 'appStateActive' | 'manual';

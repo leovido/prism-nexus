@@ -1,5 +1,5 @@
-export { computeDiff, deepEqual } from './diff';
 export { applyPatch } from './applyPatch';
+export { computeDiff, deepEqual } from './diff';
 export {
   appendPointer,
   buildPointer,

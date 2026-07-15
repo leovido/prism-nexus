@@ -1,16 +1,16 @@
-export { HydratorProvider, useHydrator } from './HydratorProvider';
+export type {
+  HydrationDispatchDeps,
+  HydrationSource,
+  HydrationTrigger,
+} from './dispatch';
+export { createHydrationDispatch } from './dispatch';
 export type {
   HydratorContextValue,
   HydratorProviderProps,
 } from './HydratorProvider';
-export { useHydrationController } from './useHydrationController';
+export { HydratorProvider, useHydrator } from './HydratorProvider';
 export type {
   HydratorController,
   HydratorControllerConfig,
 } from './useHydrationController';
-export { createHydrationDispatch } from './dispatch';
-export type {
-  HydrationSource,
-  HydrationTrigger,
-  HydrationDispatchDeps,
-} from './dispatch';
+export { useHydrationController } from './useHydrationController';

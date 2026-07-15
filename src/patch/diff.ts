@@ -29,9 +29,7 @@ export function deepEqual(a: Json, b: Json): boolean {
       return false;
     }
     return aKeys.every(
-      (key) =>
-        Object.prototype.hasOwnProperty.call(b, key) &&
-        deepEqual(a[key], b[key])
+      (key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key])
     );
   }
   return false;
@@ -88,14 +86,14 @@ function diffObject(
 ): void {
   for (const key of Object.keys(next)) {
     const childPointer = appendPointer(pointer, key);
-    if (Object.prototype.hasOwnProperty.call(base, key)) {
+    if (Object.hasOwn(base, key)) {
       diffInto(base[key], next[key], childPointer, out);
     } else {
       out.push({ op: 'add', path: childPointer, value: next[key] });
     }
   }
   for (const key of Object.keys(base)) {
-    if (!Object.prototype.hasOwnProperty.call(next, key)) {
+    if (!Object.hasOwn(next, key)) {
       out.push({ op: 'remove', path: appendPointer(pointer, key) });
     }
   }

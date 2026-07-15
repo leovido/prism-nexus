@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 import {
-  TestHydrationStore,
   createMockEnvelope,
   createMockHydrationSource,
   defaultTestStore,
   inspectHydrationState,
   mockHydratorExtractor,
   simulateTTLExpiry,
+  TestHydrationStore,
 } from '../index';
 
 describe('mockHydratorExtractor', () => {

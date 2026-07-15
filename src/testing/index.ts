@@ -1,23 +1,21 @@
 import { TestHydrationStore } from './store';
 
-export { TestHydrationStore } from './store';
-export type { HydrationStateSnapshot, StoredEntry } from './store';
-
+export { mergeHydrationFallback, resolveHydrationResult } from './fallback';
+export type { TestHydratorHarness } from './harness';
+export { createTestHydratorHarness } from './harness';
+export type {
+  ExtractedRequest,
+  MockEnvelopeInput,
+  MockExtractorInput,
+} from './mock';
 export {
   createMockEnvelope,
   createMockHydrationSource,
   mockHydratorExtractor,
   randomReqId,
 } from './mock';
-export type {
-  ExtractedRequest,
-  MockEnvelopeInput,
-  MockExtractorInput,
-} from './mock';
-
-export { mergeHydrationFallback, resolveHydrationResult } from './fallback';
-export { createTestHydratorHarness } from './harness';
-export type { TestHydratorHarness } from './harness';
+export type { HydrationStateSnapshot, StoredEntry } from './store';
+export { TestHydrationStore } from './store';
 
 /** Shared store powering the module-level inspection helpers below. */
 export const defaultTestStore = new TestHydrationStore();

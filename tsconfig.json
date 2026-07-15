@@ -6,10 +6,7 @@
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "customConditions": [
-      "prism-nexus-source",
-      "react-native-strict-api"
-    ],
+    "customConditions": ["prism-nexus-source", "react-native-strict-api"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",

@@ -4,7 +4,7 @@ const pkg = require('../package.json');
 
 const root = path.resolve(__dirname, '..');
 
-module.exports = function (api) {
+module.exports = (api) => {
   api.cache(true);
 
   return getConfig(

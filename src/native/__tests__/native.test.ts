@@ -3,15 +3,15 @@ import { HydrationError } from '../../errors';
 import { extractReqIdFromUrl } from '../extractReqId';
 import { mapNativeError } from '../mapNativeError';
 import {
+  createNativeHydrationSource,
+  extractHydrationReqId,
+} from '../nativeHydrationSource';
+import {
   __resetNativeHydratorModuleCacheForTests,
   getNativeHydratorModule,
   isNativeHydratorAvailable,
   requireNativeHydratorModule,
 } from '../PrismNexusHydratorModule';
-import {
-  createNativeHydrationSource,
-  extractHydrationReqId,
-} from '../nativeHydrationSource';
 import type { PrismNexusHydratorNativeSpec } from '../types';
 
 jest.mock('expo-modules-core', () => ({

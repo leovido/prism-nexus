@@ -36,7 +36,9 @@ export type CustomResolver<T> = (current: T, patch: DeepPatch<T>[]) => T;
 
 /** Conflict-resolution strategy applied by the client, not the SDK. */
 export type MergeStrategy<T> =
-  'deep-merge' | 'last-write-wins' | CustomResolver<T>;
+  | 'deep-merge'
+  | 'last-write-wins'
+  | CustomResolver<T>;
 
 /**
  * Result handed to `onHydrate`. A discriminated union on `ok`: success carries

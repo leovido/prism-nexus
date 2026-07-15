@@ -57,7 +57,7 @@ function applyLeaf(container: Json, token: string, patch: DeepPatch): void {
 
   if (isObject(container)) {
     if (patch.op === 'remove') {
-      if (!Object.prototype.hasOwnProperty.call(container, token)) {
+      if (!Object.hasOwn(container, token)) {
         throw new Error(`Cannot remove missing key: ${JSON.stringify(token)}`);
       }
       delete container[token];
@@ -90,7 +90,7 @@ function updatePath(
     return clone;
   }
   if (isObject(clone)) {
-    if (!Object.prototype.hasOwnProperty.call(clone, token)) {
+    if (!Object.hasOwn(clone, token)) {
       throw new Error(`Path segment not found: ${JSON.stringify(token)}`);
     }
     clone[token] = updatePath(clone[token], tokens, index + 1, patch);

@@ -1,7 +1,10 @@
 import type { HydrationEnvelope } from '../hydration';
 import type { HydrationSource } from '../provider';
-import { createMockEnvelope, type MockEnvelopeInput } from './mock';
-import { createMockHydrationSource } from './mock';
+import {
+  createMockEnvelope,
+  createMockHydrationSource,
+  type MockEnvelopeInput,
+} from './mock';
 import { TestHydrationStore } from './store';
 
 export interface TestHydratorHarness {

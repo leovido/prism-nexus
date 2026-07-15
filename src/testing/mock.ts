@@ -1,7 +1,7 @@
 import type { HydrationEnvelope } from '../hydration';
 import type { HydrationSource, HydrationTrigger } from '../provider';
 import type { HydrationContext } from '../types';
-import { TestHydrationStore } from './store';
+import type { TestHydrationStore } from './store';
 
 /** Result of extracting a request locator from a raw deep link payload. */
 export interface ExtractedRequest {
