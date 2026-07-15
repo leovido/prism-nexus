@@ -1,3 +1,16 @@
+import { StatusBar } from 'expo-status-bar';
+import {
+  applyPatch,
+  configureNativeHydrator,
+  estimateChunkCount,
+  type HydrationResult,
+  HydratorProvider,
+  inspectNativeHydrationStorage,
+  NATIVE_CHUNK_THRESHOLD_BYTES,
+  sealAndStoreHydrationPayload,
+  useHydrator,
+} from 'prism-nexus';
+import { createMockEnvelope, mockHydratorExtractor } from 'prism-nexus/testing';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,20 +21,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import {
-  applyPatch,
-  configureNativeHydrator,
-  estimateChunkCount,
-  HydratorProvider,
-  inspectNativeHydrationStorage,
-  NATIVE_CHUNK_THRESHOLD_BYTES,
-  sealAndStoreHydrationPayload,
-  useHydrator,
-  type HydrationResult,
-} from 'prism-nexus';
-import { createMockEnvelope, mockHydratorExtractor } from 'prism-nexus/testing';
-import { appSchema, initialAppState, type AppState } from './appSchema';
+import { type AppState, appSchema, initialAppState } from './appSchema';
 import {
   createExampleHydrationSource,
   getWebTestStore,
@@ -132,7 +132,9 @@ function HydratorDemo({
       <Text style={styles.subtitle}>
         {usesNativeHydrator()
           ? 'Native Expo bridge (testMode)'
-          : 'Web mock source'}
+          : Platform.OS === 'web'
+            ? 'Web mock source'
+            : 'Mock source (native module not linked — rebuild the app)'}
       </Text>
 
       <View style={styles.card}>
