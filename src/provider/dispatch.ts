@@ -34,11 +34,15 @@ export function createHydrationDispatch<T>(deps: HydrationDispatchDeps<T>) {
   const { source, getBaseState, options, queue } = deps;
 
   return async function dispatch(trigger: HydrationTrigger): Promise<void> {
+    const attempt = queue.beginAttempt();
     const base = getBaseState();
     let envelope: HydrationEnvelope | null;
     try {
       envelope = await source.resolve(trigger);
     } catch (cause) {
+      if (!queue.isCurrentAttempt(attempt)) {
+        return;
+      }
       const error = HydrationError.is(cause)
         ? cause
         : new HydrationError('Hydration source failed to resolve', {
@@ -50,14 +54,26 @@ export function createHydrationDispatch<T>(deps: HydrationDispatchDeps<T>) {
       return;
     }
 
+    if (!queue.isCurrentAttempt(attempt)) {
+      if (envelope !== null) {
+        options.onWarn?.(
+          `Discarded stale hydration request: ${envelope.reqId}`
+        );
+      }
+      return;
+    }
+
     if (envelope === null) {
       return;
     }
 
     const resolved = envelope;
-    await queue.submit({
-      reqId: resolved.reqId,
-      run: async () => runHydration(resolved, base, options),
-    });
+    await queue.submit(
+      {
+        reqId: resolved.reqId,
+        run: async () => runHydration(resolved, base, options),
+      },
+      attempt
+    );
   };
 }

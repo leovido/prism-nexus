@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { z } from 'zod';
 import type { HydrationOptions, HydrationResult } from '../../types';
-import { HydrationQueue, runHydration } from '../pipeline';
 import type { HydrationEnvelope } from '../pipeline';
+import { HydrationQueue, runHydration } from '../pipeline';
 
 interface AppState {
   user: { id: string; name: string };
@@ -118,7 +118,8 @@ describe('HydrationQueue', () => {
       context: 'guest',
     };
 
-    await queue.submit({ reqId: 'a', run: async () => result });
+    const attempt = queue.beginAttempt();
+    await queue.submit({ reqId: 'a', run: async () => result }, attempt);
 
     expect(onResult).toHaveBeenCalledWith(result);
   });
@@ -142,11 +143,16 @@ describe('HydrationQueue', () => {
       context: 'guest',
     };
 
-    const firstSubmit = queue.submit({
-      reqId: 'old',
-      run: () => first.promise,
-    });
-    await queue.submit({ reqId: 'new', run: async () => fresh });
+    const firstAttempt = queue.beginAttempt();
+    const firstSubmit = queue.submit(
+      {
+        reqId: 'old',
+        run: () => first.promise,
+      },
+      firstAttempt
+    );
+    const secondAttempt = queue.beginAttempt();
+    await queue.submit({ reqId: 'new', run: async () => fresh }, secondAttempt);
 
     first.resolve(stale);
     await firstSubmit;
@@ -156,5 +162,75 @@ describe('HydrationQueue', () => {
     expect(onWarn).toHaveBeenCalledWith(
       'Discarded stale hydration request: old'
     );
+  });
+
+  it('skips superseded work before run() when a newer request was queued', async () => {
+    const onResult = jest.fn<(r: HydrationResult<AppState>) => void>();
+    const onWarn = jest.fn<(msg: string) => void>();
+    const queue = new HydrationQueue<AppState>(onResult, onWarn);
+    const run = jest.fn(async () => ({
+      ok: true as const,
+      patch: [],
+      version: 1,
+      context: 'session' as const,
+    }));
+
+    const gate = deferred<void>();
+    const firstAttempt = queue.beginAttempt();
+    const blocked = queue.submit(
+      {
+        reqId: 'blocked',
+        run: async () => {
+          await gate.promise;
+          return run();
+        },
+      },
+      firstAttempt
+    );
+    const secondAttempt = queue.beginAttempt();
+    await queue.submit({ reqId: 'latest', run }, secondAttempt);
+
+    gate.resolve();
+    await blocked;
+
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(onResult).toHaveBeenCalledTimes(1);
+    expect(onWarn).toHaveBeenCalledWith(
+      'Discarded stale hydration request: blocked'
+    );
+  });
+
+  it('delivers only once when the same reqId overlaps in flight', async () => {
+    const onResult = jest.fn<(r: HydrationResult<AppState>) => void>();
+    const queue = new HydrationQueue<AppState>(onResult);
+    const result: HydrationResult<AppState> = {
+      ok: true,
+      patch: [],
+      version: 1,
+      context: 'guest',
+    };
+    const gate = deferred<void>();
+
+    const firstAttempt = queue.beginAttempt();
+    const first = queue.submit(
+      {
+        reqId: 'dup',
+        run: async () => {
+          await gate.promise;
+          return result;
+        },
+      },
+      firstAttempt
+    );
+    const secondAttempt = queue.beginAttempt();
+    await queue.submit(
+      { reqId: 'dup', run: async () => result },
+      secondAttempt
+    );
+
+    gate.resolve();
+    await first;
+
+    expect(onResult).toHaveBeenCalledTimes(1);
   });
 });

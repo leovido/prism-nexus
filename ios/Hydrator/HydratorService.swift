@@ -49,7 +49,7 @@ final class HydratorService {
   }
 
   func resolveEnvelope() throws -> [String: Any]? {
-    _ = try storage.purgeExpired(testMode: testMode)
+    _ = try storage.purgeExpired(testMode: testMode, excluding: inFlightSnapshot())
     let reqIds = storage.listReqIds().reversed()
     for reqId in reqIds {
       guard acquireLock(reqId) else { continue }
@@ -67,7 +67,7 @@ final class HydratorService {
   }
 
   func purgeExpired() throws -> Int {
-    try storage.purgeExpired(testMode: testMode)
+    try storage.purgeExpired(testMode: testMode, excluding: inFlightSnapshot())
   }
 
   func inspectStorage() throws -> [String: Any] {
@@ -153,6 +153,12 @@ final class HydratorService {
     lock.lock()
     inFlight.remove(reqId)
     lock.unlock()
+  }
+
+  private func inFlightSnapshot() -> Set<String> {
+    lock.lock()
+    defer { lock.unlock() }
+    return inFlight
   }
 }
 

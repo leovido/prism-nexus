@@ -58,7 +58,7 @@ class HydratorService(
   }
 
   fun resolveEnvelope(): Map<String, Any?>? {
-    storage.purgeExpired(testMode)
+    storage.purgeExpired(testMode, inFlightSnapshot())
     val reqIds = storage.listReqIds().reversed()
     for (reqId in reqIds) {
       if (!inFlight.add(reqId)) continue
@@ -75,7 +75,7 @@ class HydratorService(
     return null
   }
 
-  fun purgeExpired(): Int = storage.purgeExpired(testMode)
+  fun purgeExpired(): Int = storage.purgeExpired(testMode, inFlightSnapshot())
 
   fun inspectStorage(): Map<String, Any?> {
     val (stored, cached) = storage.inspect(testMode)
@@ -192,4 +192,9 @@ class HydratorService(
           )
         },
     )
+
+  private fun inFlightSnapshot(): Set<String> =
+    synchronized(inFlight) {
+      inFlight.toSet()
+    }
 }

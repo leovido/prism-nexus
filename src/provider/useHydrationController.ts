@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { AppState } from 'react-native';
 import type { AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 import { HydrationQueue } from '../hydration';
 import type { HydrationOptions } from '../types';
-import { createHydrationDispatch } from './dispatch';
 import type { HydrationSource, HydrationTrigger } from './dispatch';
+import { createHydrationDispatch } from './dispatch';
 
 export interface HydratorControllerConfig<T> extends HydrationOptions<T> {
   /** Bridge/mocked source of hydration payloads. */
@@ -31,6 +31,9 @@ export function useHydrationController<T>(
   configRef.current = config;
 
   const queueRef = useRef<HydrationQueue<T> | null>(null);
+  const inFlightRef = useRef(false);
+  const pendingTriggerRef = useRef<HydrationTrigger | null>(null);
+  const inFlightPromiseRef = useRef<Promise<void> | null>(null);
   if (queueRef.current === null) {
     queueRef.current = new HydrationQueue<T>(
       (result) => configRef.current.onHydrate(result),
@@ -49,9 +52,35 @@ export function useHydrationController<T>(
     return run(trigger);
   }, []);
 
+  const dispatchRef = useRef(dispatch);
+  dispatchRef.current = dispatch;
+
+  const coalescedDispatch = useCallback((trigger: HydrationTrigger) => {
+    if (inFlightRef.current) {
+      pendingTriggerRef.current = trigger;
+      return inFlightPromiseRef.current ?? Promise.resolve();
+    }
+
+    inFlightRef.current = true;
+    const loop = async () => {
+      let current: HydrationTrigger | null = trigger;
+      while (current !== null) {
+        await dispatchRef.current(current);
+        current = pendingTriggerRef.current;
+        pendingTriggerRef.current = null;
+      }
+    };
+    const promise = loop().finally(() => {
+      inFlightRef.current = false;
+      inFlightPromiseRef.current = null;
+    });
+    inFlightPromiseRef.current = promise;
+    return promise;
+  }, []);
+
   useEffect(() => {
-    dispatch('appLaunch');
-  }, [dispatch]);
+    coalescedDispatch('appLaunch').catch(() => undefined);
+  }, [coalescedDispatch]);
 
   useEffect(() => {
     let previous = AppState.currentState;
@@ -63,16 +92,16 @@ export function useHydrationController<T>(
           next === 'active';
         previous = next;
         if (cameToForeground) {
-          dispatch('appStateActive');
+          coalescedDispatch('appStateActive').catch(() => undefined);
         }
       }
     );
     return () => subscription.remove();
-  }, [dispatch]);
+  }, [coalescedDispatch]);
 
   const hydrateNow = useCallback(() => {
-    dispatch('manual');
-  }, [dispatch]);
+    coalescedDispatch('manual').catch(() => undefined);
+  }, [coalescedDispatch]);
 
   return { hydrateNow };
 }

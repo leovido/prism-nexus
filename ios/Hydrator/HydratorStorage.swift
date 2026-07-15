@@ -77,13 +77,14 @@ final class HydratorStorage {
     }
   }
 
-  func purgeExpired(testMode: Bool) throws -> Int {
+  func purgeExpired(testMode: Bool, excluding reqIds: Set<String> = []) throws -> Int {
     if testMode {
       return 0
     }
     var removed = 0
     let now = currentMonotonicMs()
     for reqId in listReqIds() {
+      if reqIds.contains(reqId) { continue }
       guard let (_, meta) = try load(reqId: reqId) else { continue }
       if now &- meta.storedAtMonotonicMs > HydratorConstants.ttlMs {
         try remove(reqId: reqId)

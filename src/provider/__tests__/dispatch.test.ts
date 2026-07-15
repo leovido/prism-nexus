@@ -1,10 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { z } from 'zod';
-import { HydrationQueue } from '../../hydration';
 import type { HydrationEnvelope } from '../../hydration';
+import { HydrationQueue } from '../../hydration';
 import type { HydrationOptions, HydrationResult } from '../../types';
-import { createHydrationDispatch } from '../dispatch';
 import type { HydrationSource } from '../dispatch';
+import { createHydrationDispatch } from '../dispatch';
 
 interface AppState {
   count: number;
@@ -105,5 +105,49 @@ describe('createHydrationDispatch', () => {
       expect(result.error.code).toBe('MALFORMED_PAYLOAD');
       expect(result.fallback).toEqual({ count: 0 });
     }
+  });
+
+  it('applies only the latest result when dispatches overlap', async () => {
+    const onHydrate = jest.fn<(r: HydrationResult<AppState>) => void>();
+    const onWarn = jest.fn();
+    let call = 0;
+    const delayedSource: HydrationSource = {
+      resolve: async () => {
+        call += 1;
+        if (call === 1) {
+          await new Promise((r) => setTimeout(r, 30));
+          return envelope({ count: 1 }, 'req-old');
+        }
+        return envelope({ count: 9 }, 'req-new');
+      },
+    };
+
+    const options = makeOptions(onHydrate, { onWarn });
+    const queue = new HydrationQueue<AppState>(
+      options.onHydrate,
+      options.onWarn
+    );
+    const dispatch = createHydrationDispatch<AppState>({
+      source: delayedSource,
+      getBaseState: () => ({ count: 0 }),
+      options,
+      queue,
+    });
+
+    const firstDispatch = dispatch('appLaunch');
+    const secondDispatch = dispatch('manual');
+    await Promise.all([firstDispatch, secondDispatch]);
+
+    expect(onHydrate).toHaveBeenCalledTimes(1);
+    const result = onHydrate.mock.calls[0]![0];
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.patch).toEqual([
+        { op: 'replace', path: '/count', value: 9 },
+      ]);
+    }
+    expect(onWarn).toHaveBeenCalledWith(
+      'Discarded stale hydration request: req-old'
+    );
   });
 });

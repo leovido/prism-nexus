@@ -70,26 +70,59 @@ export interface ScheduledRequest<T> {
 }
 
 /**
- * Serialises overlapping hydration triggers so only the newest `reqId` is
- * applied. When an in-flight request resolves after a newer one was submitted,
- * its result is discarded and reported via `onWarn` (a stale request), never
- * delivered to `onResult`.
+ * Serialises overlapping hydration triggers so only the newest submission is
+ * applied. Call {@link beginAttempt} when a trigger starts (before any async
+ * work) so late native resolves cannot supersede a newer attempt. Requests are
+ * processed one at a time; superseded work is skipped before `run()` when
+ * possible, and stale completions are reported via `onWarn` without reaching
+ * `onResult`.
  */
 export class HydrationQueue<T> {
-  private latestReqId: string | null = null;
+  private generation = 0;
+  private tail: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly onResult: (result: HydrationResult<T>) => void,
     private readonly onWarn?: (msg: string) => void
   ) {}
 
-  async submit(request: ScheduledRequest<T>): Promise<void> {
-    this.latestReqId = request.reqId;
-    const result = await request.run();
-    if (this.latestReqId !== request.reqId) {
-      this.onWarn?.(`Discarded stale hydration request: ${request.reqId}`);
+  /** Reserve the next attempt generation before awaiting the hydration source. */
+  beginAttempt(): number {
+    return ++this.generation;
+  }
+
+  isCurrentAttempt(generation: number): boolean {
+    return generation === this.generation;
+  }
+
+  submit(request: ScheduledRequest<T>, generation: number): Promise<void> {
+    const promise = this.tail.then(() =>
+      this.processRequest(request, generation)
+    );
+    this.tail = promise.catch(() => undefined);
+    return promise;
+  }
+
+  private warnStale(reqId: string): void {
+    this.onWarn?.(`Discarded stale hydration request: ${reqId}`);
+  }
+
+  private async processRequest(
+    request: ScheduledRequest<T>,
+    generation: number
+  ): Promise<void> {
+    if (!this.isCurrentAttempt(generation)) {
+      this.warnStale(request.reqId);
       return;
     }
+
+    const result = await request.run();
+
+    if (!this.isCurrentAttempt(generation)) {
+      this.warnStale(request.reqId);
+      return;
+    }
+
     this.onResult(result);
   }
 }

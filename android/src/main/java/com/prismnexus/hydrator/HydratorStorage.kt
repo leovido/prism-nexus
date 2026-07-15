@@ -59,11 +59,15 @@ class HydratorStorage(
   fun totalBytes(): Int =
     cacheDirectory.listFiles()?.sumOf { it.length().toInt() } ?: 0
 
-  fun purgeExpired(testMode: Boolean): Int {
+  fun purgeExpired(
+    testMode: Boolean,
+    excluding: Set<String> = emptySet(),
+  ): Int {
     if (testMode) return 0
     var removed = 0
     val now = currentMonotonicMs()
     for (reqId in listReqIds()) {
+      if (reqId in excluding) continue
       val meta = load(reqId)?.second ?: continue
       if (now - meta.storedAtMonotonicMs > HydratorConstants.TTL_MS) {
         remove(reqId)
