@@ -44,6 +44,9 @@ jobs:
       - name: Run unit tests
         run: yarn test --maxWorkers=2 --coverage
 
+      - name: Run performance benchmarks
+        run: yarn benchmark
+
   build-library:
     runs-on: ubuntu-latest
 
